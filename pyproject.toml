@@ -1,0 +1,17 @@
+[project]
+name = "towerofdefense"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ryan Setaruddin",email = "coolry1998@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "arcade (>=3.3.3,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
