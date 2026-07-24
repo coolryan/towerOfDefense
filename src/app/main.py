@@ -8,10 +8,10 @@ def main():
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
 
     # Create & setup the GameView
-    game = GameView()
+    game_view = GameView()
 
     # Show GameView on screen
-    window.show_view(game)
+    window.show_view(game_view)
 
     # Start the arcade game loop
     arcade.run()
