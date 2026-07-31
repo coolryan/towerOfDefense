@@ -1,7 +1,7 @@
 import arcade
 import arcade.gui
 
-class TowerDefesneView(arcade.View):
+class TowerDefesneUI(arcade.View):
     def __init__(self):
         super().__init__()
         self.manager = arcade.gui.UIManager()

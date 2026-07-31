@@ -1,12 +1,12 @@
 # Constants
 
 # SCREEN dimensions
-WINDOW_WIDTH, WINDOW_HEIGHT, = 1280, 720
+SCREEN_WIDTH, SCREEN_HEIGHT, = 1280, 720
 TILE_SIZE = 64
 FPS = 60
 
 # window caption
-WINDOW_TITLE = "My Tower"
+SCREEN_TITLE = "My Tower"
 
 # colors (RGB)
 WHITE = (255, 255, 255)
