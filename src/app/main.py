@@ -5,6 +5,7 @@ from game.game import *
 def main():
     """ Main function """
     game = TowerDefenseGame()
+    game.setup()
     
     # Start the arcade game loop
     arcade.run()

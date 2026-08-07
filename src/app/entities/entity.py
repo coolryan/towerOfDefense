@@ -8,10 +8,9 @@ class Player:
 class Enemy(arcade.Sprite):
     def __init__(self, name, path, path_index: int = 0, 
                 health: int = 50, max_health: int = 50, speed: float = 2.0):
-        super().__init__(":resources:images/space_ships/playerShip1_orange.png") # placeholder asset
+        super().__init__(":resources:images/alien/alienBlue_sq1.png", scale=0.5) # placeholder asset
         self.name = name
         self.path = path
-        self.health = health
         self.speed = speed
         self.path_index, self.health, self.max_health = path_index, health, max_health
         self.x, self.y = path[0]
@@ -39,8 +38,9 @@ class Enemy(arcade.Sprite):
         if self.active:
             arcade.draw_circle_filled(self.x, self.y, 12, arcade.color.RED)
 
-class Tower:
+class Tower(arcade.Sprite):
     def __init__(self, x, y):
+        super().__init__(":resources:images/tiles/brickGrey.png", scale=0.75)
         self.x, self.y = x, y
         self.range, self.damage, self.cooldown = 150, 10, 0
 

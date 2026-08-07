@@ -27,7 +27,7 @@ class MonsterEnemy(Enum):
 # Golins sub-enum
 class GoblinType(Enum):
     """ sub-enums specific to the Golin family"""
-    PEON = "Goblin Poem"
+    PEON = "Goblin Peon"
     WARRIOR = "Armored Goblin Warrior"
     CHIEFTAIN = "Goblin cheftain Boss"
 

@@ -15,21 +15,40 @@ class TowerDefenseGame(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         self.background_color = arcade.color.AMAZON
 
-        self.player = Player()
-        self.path = [(100, 100), (700, 500), (100, 500)]
-        self.enemies = []
-        self.towers = [Tower(400, 300)]
-        self.spawn_timer = 0
-
+        # game state variables
+        self.gold = 100
+        self.mouse_x, self.mouse_y = 0, 0
+        self.selected_tower_type = "Basic"
+        self.towers = []
+        self.dragging = False
 
         # If you have sprite lists, you should create them here,
         # and set them to None
-        self.towerOfDefenseUI = self.towerOfDefenseUI()
+        self.enemy_list = arcade.SpriteList()
+        self.tower_list = arcade.SpriteList()
+
+    def setup(self):
+        # Create a tower & enemy
+        tower = Tower(400, 300)
+        self.tower_list.append(tower)
+
+        enemy = Enemy("", ":resources:images/alien/alienBlue_sq1.png", 
+                    0, 50, 50, 2.0)
+        self.enemy_list.append(enemy)
 
     def reset(self):
         """Reset the game to the initial state."""
         # Do changes needed to restart the game here if you want to support that
         pass
+
+    def on_update(self, delta_time):
+            """
+            All the logic to move, and the game logic goes here.
+            Normally, you'll call update() on the sprite lists that
+            need it.
+            """
+            self.enemy_list.update()
+            self.tower_list.update()
 
     def on_draw(self):
         """
@@ -38,92 +57,103 @@ class TowerDefenseGame(arcade.Window):
         # This command should happen before we start drawing. It will clear
         # the screen to the background color, and erase what we drew last frame.
         self.clear()
+        self.tower_list.draw()
+        self.enemy_list.draw()
 
-        arcade.start_render()
+        self.towerOfDefenseUI = self.towerOfDefenseUI()
 
-        # draw path
-        arcade.draw_line_strip(self.path, arcade.color.YELLOW, 4)
+        # Draw UI text
+        arcade.draw_text(f"Gold: {self.gold}", 10, 560, arcade.color.BLACK, 20)
+        arcade.draw_text(
+            f"Selected: {self.selected_tower_type}",
+            10,
+            530,
+            arcade.color.BLACK,
+            14,
+        )
+        arcade.draw_text(
+            "Keys: [1] Basic Tower, [2] Heavy Tower",
+            10,
+            500,
+            arcade.color.BLACK,
+            12,
+        )
 
-        # draw entities
-        for enemy in self.enemies:
-            enemy.draw()
+        # Draw placed towers
+        for x, y, color in self.towers:
+            arcade.draw_circle_filled(x, y, 20, color)
 
-        for tower in self.towers:
-            tower.draw()
+        # Draw ghost tower on mouse hover
+        arcade.draw_circle_filled(self.mouse_x, self.mouse_y, 20, (0, 0, 255, 100))
 
-        # draw UI text
-        arcade.draw_text(f"Gold: {self.player.gold}", 10, 560, arcade.color.WHITE, 18)
-        arcade.draw_text(f"Lives: {self.player.lives}", 150, 560, arcade.color.WHITE, 18)
-
-        # draw UI
-        self.towerOfDefenseUI.on_draw()
-
-        # Call draw() on all your sprite lists below
-    
-    def on_update(self, delta_time):
-        """
-        All the logic to move, and the game logic goes here.
-        Normally, you'll call update() on the sprite lists that
-        need it.
-        """
-        # Spawn enemies over time
-        self.spawn_timer += 1
-        if self.spawn_timer > 90:
-            self.enemies.append(Enemy(self.path))
-            self.spawn_timer = 0
-
-        # update entities
-        for enemy in self.enemies:
-            enemy.update()
-
-            if not enemy.active & enemy.health <= 0:
-                self.player.gold += 10
-            elif not enemy.active:
-                self.player.lives -= 1
-
-        # remove dead/finished enemies
-        self.enemies = [e for e in self.enemies if e.active]
-
-        # always update ui
-        self.towerOfDefenseUI.on_update()
-
-    def on_key_press(self, symbol, modifiers):
+    # --- Keyboard Events ---
+    def on_key_press(self, symbol: int, modifiers: int):
         """
         Called whenever a key on the keyboard is pressed.
 
         For a full list of keys, see:
         https://api.arcade.academy/en/latest/arcade.key.html
         """
-        pass
+        if symbol == arcade.key.KEY_1:
+            self.selected_tower_type = "Basic Tower"
+            print("selected Basic Tower")
+        elif symbol == arcade.key.KEY_2:
+            self.selected_tower_type = "Heavy Tower"
+            print("selected Heavy Tower")
+        elif symbol == arcade.key.ESCAPE:
+            self.close()
     
-    def on_key_release(self, symbol, modifiers):
+    def on_key_release(self, symbol: int, modifiers: int):
         """
         Called whenever the user lets off a previously pressed key.
         """
-        pass
-    
-    def on_mouse_motion(self, x, y, delta_x, delta_y):
+        if symbol == arcade.key.KEY_1 or symbol == arcade.key.KEY_2:
+            print("Tower selection key released.")
+
+    # --- Mouse Motion Events ---
+    def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         """
         Called whenever the mouse moves.
         """
-        pass
+        self.mouse_x, self.mouse_y = x, y
 
-    def on_mouse_press(self, x, y, button, key_modifiers):
+    def on_mouse_press(self, x: float, y: float, button: int, key_modifiers: int):
         """
         Called when the user presses a mouse button.
         """
-        pass
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            # Spend gold & place a tower
+            if self.gold >= 50:
+                color = (
+                    arcade.color.BLUE
+                    if self.selected_tower_type == "Basic Tower"
+                    else arcade.color.RED
+                )
+                self.towers.append((x, y, color))
+                self.gold -= 50
+                print(f"Placed {self.selected_tower_type} at ({x}, {y})")
+        elif button == arcade.MOUSE_BUTTON_RIGHT:
+            self.dragging = True
+            print("Started right-click drag mode.")
 
-    def on_mouse_release(self, x, y, button, key_modifiers):
+    def on_mouse_release(self, x: float, y: float, button: int, key_modifiers: int):
         """
         Called when a user releases a mouse button.
         """
-        pass
+        if button == arcade.MOUSE_BUTTON_RIGHT:
+            self.dragging = False
+            print("Ended right-click drag mode.")
     
-    def on_mouse_drag(self, x, y, dx, dy, _buttons, _modifiers):
+    def on_mouse_drag(self, x: float, y: float, dx: float, dy: float, buttons: int, modifiers: int):
         """Called when the user drags the mouse."""
-        pass
+        self.mouse_x, self.mouse_y = x, y
+        if self.dragging:
+            # Dragging to pan map or remove towers
+            pass
     
-    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
+    def on_mouse_scroll(self, x: float, y: float, scroll_x: float, scroll_y: float):
         """Called when the user scrolls the mouse wheel."""
-        pass
+        if scroll_y > 0:
+            print("Zoom in or cycle forward.")
+        else:
+            print("Zoom in or cycle forward.")
