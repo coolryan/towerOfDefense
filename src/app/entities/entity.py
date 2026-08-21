@@ -8,31 +8,31 @@ class Player:
 class Enemy(arcade.Sprite):
     def __init__(self, name, path, path_index: int = 0, 
                 health: int = 50, max_health: int = 50, speed: float = 2.0):
-        super().__init__(":resources:images/alien/alienBlue_sq1.png", scale=0.5) # placeholder asset
+        super().__init__(path=":resources:images/alien/alienBlue_square.png", scale=0.5) # placeholder asset
         self.name = name
         self.path = path
         self.speed = speed
         self.path_index, self.health, self.max_health = path_index, health, max_health
-        self.x, self.y = path[0]
+        self.x, self.y = 10, 10
         self.active = True
         
-    def update(self):
+    def update(self, delta_time):
         if not self.active:
             return
 
-        target_x, target_y = self.path[self.path_index]
-        dx, dy = target_x - self.x, target_y - self.y
-        distance = math.hypot(dx, dy)
+        # target_x, target_y = 0, 0
+        # dx, dy = target_x - self.x, target_y - self.y
+        # distance = math.hypot(dx, dy)
 
-        if distance < self.speed:
-            self.x, self.y = target_x, target_y
-            self.path_index += 1
+        # if distance < self.speed:
+        #     self.x, self.y = target_x, target_y
+        #     self.path_index += 1
 
-            if self.path_index >= len(self.path):
-                self.active = False # Reached the end
-        else:
-            self.x += self.speed * dx / distance
-            self.y += self.speed * dy / distance
+        #     if self.path_index >= len(self.path):
+        #         self.active = False # Reached the end
+        # else:
+        #     self.x += self.speed * dx / distance
+        #     self.y += self.speed * dy / distance
 
     def draw(self):
         if self.active:

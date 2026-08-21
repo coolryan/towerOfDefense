@@ -32,7 +32,7 @@ class TowerDefenseGame(arcade.Window):
         tower = Tower(400, 300)
         self.tower_list.append(tower)
 
-        enemy = Enemy("", ":resources:images/alien/alienBlue_sq1.png", 
+        enemy = Enemy("Alien", ":resources:images/alien/alienBlue_square.png", 
                     0, 50, 50, 2.0)
         self.enemy_list.append(enemy)
 
