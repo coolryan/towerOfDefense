@@ -9,37 +9,74 @@ class Player:
         self.gold = 100
 
 class Enemy(arcade.Sprite):
-    def __init__(self, name, path, path_index: int = 0, 
-                health: int = 50, max_health: int = 50, speed: float = 2.0):
-        super().__init__(path=":resources:images/alien/alienBlue_square.png", scale=0.5) # placeholder asset
-        self.name = name
+    def __init__(self, path):
+        super().__init__("character.png", 0.5) # use your sprite image path
         self.path = path
-        self.speed = speed
-        self.path_index, self.health, self.max_health = path_index, health, max_health
-        self.x, self.y = 10, 10
-        self.active = True
+        self.path_index = 0
+
+        # Stats
+        self.max_health = 150.0
+        self.health = self.max_health
+        self.speed, self.gold_value = 2.0, 25
+
+        # State
+        self.is_slowed = False
+        self.slow_timer = 0.0
+
+        # Position at start of path
+        if self.path:
+            self.center_x, self.center_y = self.path[0]
         
-    def update(self, delta_time):
-        if not self.active:
-            return
+    def update(self):
+        # hnalde slow effect duration
+        if self.is_slowed:
+            self.slow_timer -= 1 / 60
+            if self.slow_timer <= 0:
+                self.is_slowed = False
 
-        # target_x, target_y = 0, 0
-        # dx, dy = target_x - self.x, target_y - self.y
-        # distance = math.hypot(dx, dy)
+        # move along path
+        if self.path_index < len(self.path):
+            target_x, target_y = self.path[self.path_index]
+            dx = target_x - self.center_x
+            dy = target_y - self.center_y
+            distance = math.hypot(dx, dy)
 
-        # if distance < self.speed:
-        #     self.x, self.y = target_x, target_y
-        #     self.path_index += 1
+            current_speed = self.speed * 0.5 if self.is_slowed else self.speed
 
-        #     if self.path_index >= len(self.path):
-        #         self.active = False # Reached the end
-        # else:
-        #     self.x += self.speed * dx / distance
-        #     self.y += self.speed * dy / distance
+            if distance <= current_speed:
+                # snap tp waypoint & target next one
+                self.center_x, self.center_y = target_x, target_y
+                self.path_index += 1
+            else:
+                # move towards waypoint
+                self.center_x += (dx / distance) * current_speed
+                self.center_y += (dy / distance) * current_speed
 
-    def draw(self):
-        if self.active:
-            arcade.draw_circle_filled(self.x, self.y, 12, arcade.color.RED)
+    def apply_damage(self, amount):
+        self.health -= amount
+        if self.health <= 0:
+            self.kill()
+
+    def apply_slow(self, duration):
+        self.is_slowed = False
+        self.slow_timer = duration
+
+    def draw_health_bar(self):
+        # draw background bar
+        bar_width, bar_height = 40, 6
+        x, y = self.center_x, self.center_y + 30
+
+        arcade.draw_rect_filled(x, y, bar_width, bar_height, arcade.color.RED)
+
+        # draw current health foreground
+        current_width = bar_width * (self.health / self.max_health)
+        arcade.draw_rect_filled(
+            x - (bar_width - current_width) / 2,
+            y,
+            current_width,
+            bar_height,
+            arcade.color.GREEN
+        )
 
 class Projectile(arcade.Sprite):
     """ Basic projectile fired by the tower."""
@@ -127,7 +164,7 @@ class Tower(arcade.Sprite):
             self.cooldown_timer = self.cooldown_max
 
     def on_update(self, delta_time, enemies, projectile_list):
-        """Updates cooldown & handles targeting/firsting behavor"""
+        """Updates cooldown & handles targeting/firing behavor"""
         if self.cooldown_timer > 0:
             self.cooldown_timer -= delta_time
 

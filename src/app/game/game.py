@@ -32,9 +32,8 @@ class TowerDefenseGame(arcade.Window):
         tower = Tower(400, 300)
         self.tower_list.append(tower)
 
-        # enemy = Enemy("Alien", ":resources:images/alien/alienBlue_square.png", 
-        #             0, 50, 50, 2.0)
-        # self.enemy_list.append(enemy)
+        enemy = Enemy()
+        self.enemy_list.append(enemy)
 
     def reset(self):
         """Reset the game to the initial state."""
@@ -47,7 +46,7 @@ class TowerDefenseGame(arcade.Window):
             Normally, you'll call update() on the sprite lists that
             need it.
             """
-            # self.enemy_list.update()
+            self.enemy_list.update()
             self.tower_list.on_update(delta_time)
 
     def on_draw(self):
@@ -58,7 +57,7 @@ class TowerDefenseGame(arcade.Window):
         # the screen to the background color, and erase what we drew last frame.
         self.clear()
         self.tower_list.draw()
-        # self.enemy_list.draw()
+        self.enemy_list.draw_health_bar()
 
         self.towerOfDefenseUI = self.towerOfDefenseUI()
 
