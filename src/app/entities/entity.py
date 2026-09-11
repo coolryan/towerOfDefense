@@ -1,7 +1,10 @@
 import arcade, math
+from pathlib import Path
 
 # constant
 BULLET_SPEED = 7.0
+
+RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
 
 class Player:
     def __init__(self):
@@ -10,7 +13,7 @@ class Player:
 
 class Enemy(arcade.Sprite):
     def __init__(self, path):
-        super().__init__("character.png", 0.5) # use your sprite image path
+        super().__init__(str(RESOURCES_DIR / "images/warriors/skeleton_warrior.png"), 0.5)
         self.path = path
         self.path_index = 0
 
@@ -27,10 +30,10 @@ class Enemy(arcade.Sprite):
         if self.path:
             self.center_x, self.center_y = self.path[0]
         
-    def update(self):
-        # hnalde slow effect duration
+    def update(self, delta_time: float = 1 / 60, *args, **kwargs):
+        # handle slow effect duration
         if self.is_slowed:
-            self.slow_timer -= 1 / 60
+            self.slow_timer -= delta_time
             if self.slow_timer <= 0:
                 self.is_slowed = False
 
@@ -66,40 +69,32 @@ class Enemy(arcade.Sprite):
         bar_width, bar_height = 40, 6
         x, y = self.center_x, self.center_y + 30
 
-        arcade.draw_rect_filled(x, y, bar_width, bar_height, arcade.color.RED)
+        arcade.draw_rect_filled(arcade.XYWH(x, y, bar_width, bar_height), arcade.color.RED)
 
         # draw current health foreground
         current_width = bar_width * (self.health / self.max_health)
         arcade.draw_rect_filled(
-            x - (bar_width - current_width) / 2,
-            y,
-            current_width,
-            bar_height,
+            arcade.XYWH(x - (bar_width - current_width) / 2, y, current_width, bar_height),
             arcade.color.GREEN
         )
 
 class Projectile(arcade.Sprite):
     """ Basic projectile fired by the tower."""
     def __init__(self, start_x, start_y, target):
-        super().__init__(":resources:images/space_shades/laserGreen01.png", 0.5)
+        super().__init__(str(RESOURCES_DIR / "images/space_shades/laserGreen01.png"), 0.5)
         self.center_x, self.center_y = start_x, start_y
         self.target = target
         self.speed = BULLET_SPEED
 
-    def update(self):
-        # Check if target still exists
-        if (
-            self.target.dead
-            or not self.target.scalers
-            and hasattr(self.target, "alpha")
-            and self.target.alpha == 0
-        ):
+    def update(self, delta_time: float = 1 / 60, *args, **kwargs):
+        # Check if target still exists (kill() removes it from all sprite lists)
+        if not self.target.sprite_lists:
             self.remove_from_sprite_lists()
             return
 
         # Move toward target position
         dx = self.target.center_x - self.center_x
-        dy = self.target.center_y = self.center_y
+        dy = self.target.center_y - self.center_y
         distance = math.hypot(dx, dy)
 
         if distance < self.speed:
@@ -108,13 +103,13 @@ class Projectile(arcade.Sprite):
             self.remove_from_sprite_lists()
         else:
             self.center_x += (dx / distance) * self.speed
-            self.center_y += (dx / distance) * self.speed
+            self.center_y += (dy / distance) * self.speed
 
 class Tower(arcade.Sprite):
     """Tower with range, rotation, cooldowns & targeting logoc"""
     def __init__(self, x, y):
-        super().__init__(":resources:images/tiles/towerDefense_tile250.png", 0.8)
-        self.x, self.y = x, y
+        super().__init__(str(RESOURCES_DIR / "images/tiles/towerDefense_tile250.png"), 0.8)
+        self.center_x, self.center_y = x, y
         self.range, self.cooldown_max, self.cooldown_timer = 200.0, 0.75, 0.0 # seconds between attacks
         self.targeting_mode = "FIRST" # Options: 'FIRST', 'CLOSEST'
 
@@ -149,7 +144,7 @@ class Tower(arcade.Sprite):
             return
 
         dx = target.center_x - self.center_x
-        dy = target.center_y = self.center_y
+        dy = target.center_y - self.center_y
         angle_rad = math.atan2(dy, dx)
         angle_deg = math.degrees(angle_rad)
 
