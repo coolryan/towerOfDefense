@@ -26,13 +26,15 @@ class TowerDefenseGame(arcade.Window):
         # and set them to None
         self.enemy_list = arcade.SpriteList()
         self.tower_list = arcade.SpriteList()
+        self.projectile_list = arcade.SpriteList()
 
     def setup(self):
         # Create a tower & enemy
         tower = Tower(400, 300)
         self.tower_list.append(tower)
 
-        enemy = Enemy()
+        path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
+        enemy = Enemy(path)
         self.enemy_list.append(enemy)
 
     def reset(self):
@@ -47,7 +49,10 @@ class TowerDefenseGame(arcade.Window):
             need it.
             """
             self.enemy_list.update()
-            self.tower_list.on_update(delta_time)
+            self.projectile_list.update()
+
+            for tower in self.tower_list:
+                tower.on_update(delta_time, self.enemy_list, self.projectile_list)
 
     def on_draw(self):
         """
@@ -57,9 +62,10 @@ class TowerDefenseGame(arcade.Window):
         # the screen to the background color, and erase what we drew last frame.
         self.clear()
         self.tower_list.draw()
-        self.enemy_list.draw_health_bar()
-
-        self.towerOfDefenseUI = self.towerOfDefenseUI()
+        self.enemy_list.draw()
+        self.projectile_list.draw()
+        for enemy in self.enemy_list:
+            enemy.draw_health_bar()
 
         # Draw UI text
         arcade.draw_text(f"Gold: {self.gold}", 10, 560, arcade.color.BLACK, 20)
