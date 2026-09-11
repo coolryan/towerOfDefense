@@ -10,7 +10,7 @@ class Player:
 
 class Enemy(arcade.Sprite):
     def __init__(self, path):
-        super().__init__("character.png", 0.5) # use your sprite image path
+        super().__init__(":resources:images/warriors/skeleton_warrior.png", 0.5) # use your sprite image path
         self.path = path
         self.path_index = 0
 
@@ -28,7 +28,7 @@ class Enemy(arcade.Sprite):
             self.center_x, self.center_y = self.path[0]
         
     def update(self):
-        # hnalde slow effect duration
+        # handle slow effect duration
         if self.is_slowed:
             self.slow_timer -= 1 / 60
             if self.slow_timer <= 0:
