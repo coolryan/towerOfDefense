@@ -26,7 +26,7 @@ class TowerDefenseGame(arcade.Window):
         # and set them to None
         self.enemy_list = arcade.SpriteList()
         self.tower_list = arcade.SpriteList()
-        self.projectile_list = arcade.SpriteList()
+        self.projectile_list = []
 
     def setup(self):
         # Create a tower & enemy
@@ -49,10 +49,13 @@ class TowerDefenseGame(arcade.Window):
             need it.
             """
             self.enemy_list.update()
-            self.projectile_list.update()
 
             for tower in self.tower_list:
                 tower.on_update(delta_time, self.enemy_list, self.projectile_list)
+
+            for projectile in self.projectile_list:
+                projectile.update(delta_time)
+            self.projectile_list = [p for p in self.projectile_list if p.alive]
 
     def on_draw(self):
         """
@@ -63,7 +66,8 @@ class TowerDefenseGame(arcade.Window):
         self.clear()
         self.tower_list.draw()
         self.enemy_list.draw()
-        self.projectile_list.draw()
+        for projectile in self.projectile_list:
+            projectile.draw()
         for enemy in self.enemy_list:
             enemy.draw_health_bar()
 
