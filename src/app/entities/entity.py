@@ -7,10 +7,18 @@ BULLET_SPEED = 7.0
 
 RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
 
-# No dedicated art for the archer yet, so it reuses the warrior sprite with a tint.
-SKELETON_TINTS = {
-    SkeletonType.WARRIOR: arcade.color.WHITE,
-    SkeletonType.ARCHER: arcade.color.KELLY_GREEN,
+SKELETON_IMAGES = {
+    SkeletonType.WARRIOR: "images/warriors/skeleton_warriors/skeleton_warrior.png",
+    SkeletonType.ARCHER: "images/warriors/skeleton_warriors/skeleton-archer.png",
+}
+
+# Each source image is a different resolution with a different amount of
+# transparent padding, so scale is tuned per-type to match on-screen
+# character size, not raw canvas size (the archer's canvas has almost no
+# padding, while the warrior's has a lot).
+SKELETON_SCALES = {
+    SkeletonType.WARRIOR: 0.107,
+    SkeletonType.ARCHER: 0.0251,
 }
 
 class Player:
@@ -20,11 +28,14 @@ class Player:
 
 class Enemy(arcade.Sprite):
     def __init__(self, path, skeleton_type: SkeletonType | None = None):
-        super().__init__(str(RESOURCES_DIR / "images/warriors/skeleton_warrior.png"), 0.107)
+        skeleton_type = skeleton_type or random.choice(list(SkeletonType))
+        super().__init__(
+            str(RESOURCES_DIR / SKELETON_IMAGES[skeleton_type]),
+            SKELETON_SCALES[skeleton_type],
+        )
         self.path = path
         self.path_index = 0
-        self.skeleton_type = skeleton_type or random.choice(list(SkeletonType))
-        self.color = SKELETON_TINTS[self.skeleton_type]
+        self.skeleton_type = skeleton_type
 
         # Stats
         stats = self.skeleton_type.value
