@@ -1,10 +1,17 @@
-import arcade, math
+import arcade, math, random
 from pathlib import Path
+from entities.enemyTypes import SkeletonType
 
 # constant
 BULLET_SPEED = 7.0
 
 RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
+
+# No dedicated art for the archer yet, so it reuses the warrior sprite with a tint.
+SKELETON_TINTS = {
+    SkeletonType.WARRIOR: arcade.color.WHITE,
+    SkeletonType.ARCHER: arcade.color.KELLY_GREEN,
+}
 
 class Player:
     def __init__(self):
@@ -12,15 +19,18 @@ class Player:
         self.gold = 100
 
 class Enemy(arcade.Sprite):
-    def __init__(self, path):
+    def __init__(self, path, skeleton_type: SkeletonType | None = None):
         super().__init__(str(RESOURCES_DIR / "images/warriors/skeleton_warrior.png"), 0.107)
         self.path = path
         self.path_index = 0
+        self.skeleton_type = skeleton_type or random.choice(list(SkeletonType))
+        self.color = SKELETON_TINTS[self.skeleton_type]
 
         # Stats
-        self.max_health = 150.0
+        stats = self.skeleton_type.value
+        self.max_health = float(stats.hp)
         self.health = self.max_health
-        self.speed, self.gold_value = 2.0, 25
+        self.speed, self.gold_value = float(stats.speed), 25
 
         # State
         self.is_slowed = False
