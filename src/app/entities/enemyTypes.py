@@ -7,6 +7,12 @@ class EnemyStats:
         self.speed = speed
         self.damage = damage
 
+    @property
+    def gold_multiplier(self) -> float:
+        """How much gold this type is worth relative to a baseline enemy,
+        based on its own hp/damage. Tune the weights as balance shakes out."""
+        return (self.hp * 0.3 + self.damage * 2) / 25.0
+
 # enemy types
 class EnemyCategory(Enum):
     "Base category for enemy tiers"

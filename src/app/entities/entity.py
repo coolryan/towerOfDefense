@@ -1,10 +1,26 @@
-import arcade, math
+import arcade, math, random
 from pathlib import Path
+from entities.enemyTypes import SkeletonType
 
 # constant
 BULLET_SPEED = 7.0
+BASE_GOLD_REWARD = 25
 
 RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
+
+SKELETON_IMAGES = {
+    SkeletonType.WARRIOR: "images/warriors/skeleton_warriors/skeleton_warrior.png",
+    SkeletonType.ARCHER: "images/warriors/skeleton_warriors/skeleton-archer.png",
+}
+
+# Each source image is a different resolution with a different amount of
+# transparent padding, so scale is tuned per-type to match on-screen
+# character size, not raw canvas size (the archer's canvas has almost no
+# padding, while the warrior's has a lot).
+SKELETON_SCALES = {
+    SkeletonType.WARRIOR: 0.107,
+    SkeletonType.ARCHER: 0.0251,
+}
 
 class Player:
     def __init__(self):
@@ -12,15 +28,24 @@ class Player:
         self.gold = 100
 
 class Enemy(arcade.Sprite):
-    def __init__(self, path):
-        super().__init__(str(RESOURCES_DIR / "images/warriors/skeleton_warrior.png"), 0.107)
+    def __init__(self, path, skeleton_type: SkeletonType | None = None, level: int = 1):
+        skeleton_type = skeleton_type or random.choice(list(SkeletonType))
+        super().__init__(
+            str(RESOURCES_DIR / SKELETON_IMAGES[skeleton_type]),
+            SKELETON_SCALES[skeleton_type],
+        )
         self.path = path
         self.path_index = 0
+        self.skeleton_type = skeleton_type
+        self.level = level
 
         # Stats
-        self.max_health = 150.0
+        stats = self.skeleton_type.value
+        self.max_health = float(stats.hp)
         self.health = self.max_health
-        self.speed, self.gold_value = 2.0, 25
+        self.speed = float(stats.speed)
+        # Stronger enemy types and higher levels are worth more gold on kill.
+        self.gold_value = round(BASE_GOLD_REWARD * stats.gold_multiplier * self.level)
 
         # State
         self.is_slowed = False
@@ -91,6 +116,7 @@ class Projectile:
         self.target = target
         self.speed = BULLET_SPEED
         self.alive = True
+        self.gold_reward = 0
 
     def update(self, delta_time: float = 1 / 60, *args, **kwargs):
         # Check if target still exists (kill() removes it from all sprite lists)
@@ -105,6 +131,7 @@ class Projectile:
 
         if distance < self.speed:
             # hit target
+            self.gold_reward = self.target.gold_value
             self.target.remove_from_sprite_lists() # or real damage
             self.alive = False
         else:

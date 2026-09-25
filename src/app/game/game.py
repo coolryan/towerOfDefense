@@ -28,13 +28,17 @@ class TowerDefenseGame(arcade.Window):
         self.tower_list = arcade.SpriteList()
         self.projectile_list = []
 
+        self.enemy_path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
+        self.enemy_spawn_interval = 5.0  # seconds between enemy spawns
+        self.enemy_spawn_timer = 0.0
+        self.enemy_level = 1  # climbs with each spawn, so later enemies are worth more gold
+
     def setup(self):
         # Create a tower & enemy
         tower = Tower(400, 300)
         self.tower_list.append(tower)
 
-        path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
-        enemy = Enemy(path)
+        enemy = Enemy(self.enemy_path, level=self.enemy_level)
         self.enemy_list.append(enemy)
 
     def reset(self):
@@ -50,11 +54,18 @@ class TowerDefenseGame(arcade.Window):
             """
             self.enemy_list.update()
 
+            self.enemy_spawn_timer += delta_time
+            if self.enemy_spawn_timer >= self.enemy_spawn_interval:
+                self.enemy_spawn_timer -= self.enemy_spawn_interval
+                self.enemy_level += 1
+                self.enemy_list.append(Enemy(self.enemy_path, level=self.enemy_level))
+
             for tower in self.tower_list:
                 tower.on_update(delta_time, self.enemy_list, self.projectile_list)
 
             for projectile in self.projectile_list:
                 projectile.update(delta_time)
+                self.gold += projectile.gold_reward
             self.projectile_list = [p for p in self.projectile_list if p.alive]
 
     def on_draw(self):
