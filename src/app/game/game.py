@@ -13,7 +13,7 @@ class TowerDefenseGame(arcade.Window):
     """
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-        self.background_color = arcade.color.AMAZON
+        self.background_textures = []
 
         # game state variables
         self.gold = 100
@@ -34,6 +34,16 @@ class TowerDefenseGame(arcade.Window):
         self.enemy_level = 1  # climbs with each spawn, so later enemies are worth more gold
 
     def setup(self):
+        image_files = [
+            "./resources/images/backgrounds/Background_medieval_4.webp",
+            # "./resources/images/backgrounds/empty-silhouette-medieval-background.jpg",
+            # "./resources/images/backgrounds/MedievalKingdom.jpg"
+        ]
+
+        for file_path in image_files:
+            texture = arcade.load_texture(file_path)
+            self.background_textures.append(texture)
+
         # Create a tower & enemy
         tower = Tower(400, 300)
         self.tower_list.append(tower)
@@ -75,6 +85,13 @@ class TowerDefenseGame(arcade.Window):
         # This command should happen before we start drawing. It will clear
         # the screen to the background color, and erase what we drew last frame.
         self.clear()
+
+        for i, texture in enumerate(self.background_textures):
+            arcade.draw_texture_rect(
+                texture = texture,
+                rect = arcade.LBWH(i * SCREEN_WIDTH, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+            )
+
         self.tower_list.draw()
         self.enemy_list.draw()
         for projectile in self.projectile_list:
