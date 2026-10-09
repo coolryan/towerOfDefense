@@ -3,6 +3,19 @@ from entities.entity import *
 from configs.settings import *
 from ui.ui import *
 
+levels = {
+    # List of (x, y) coordinates represenating the turns on the map path
+    1: {
+        "map": "./resources/images/backgrounds/map.gif",
+        "waypoints": [
+            (0, 400), # spawn point (left side)
+            (300, 400), # first turn (goes down)
+            (300, 150), # second turn (goes right)
+            (800, 150), # exit point (right side)
+        ]
+    },
+}
+
 class TowerDefenseGame(arcade.Window):
     """
     Main application class.
@@ -35,7 +48,8 @@ class TowerDefenseGame(arcade.Window):
 
     def setup(self):
         image_files = [
-            "./resources/images/backgrounds/Background_medieval_4.webp",
+            levels.get(1).get("map"),
+            # "./resources/images/backgrounds/Background_medieval_4.webp",
             # "./resources/images/backgrounds/empty-silhouette-medieval-background.jpg",
             # "./resources/images/backgrounds/MedievalKingdom.jpg"
         ]
