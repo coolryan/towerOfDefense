@@ -41,7 +41,8 @@ class TowerDefenseGame(arcade.Window):
         self.tower_list = arcade.SpriteList()
         self.projectile_list = []
 
-        self.enemy_path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
+        #self.enemy_path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
+        self.enemy_path = levels.get(1).get("waypoints")
         self.enemy_spawn_interval = 5.0  # seconds between enemy spawns
         self.enemy_spawn_timer = 0.0
         self.enemy_level = 1  # climbs with each spawn, so later enemies are worth more gold
