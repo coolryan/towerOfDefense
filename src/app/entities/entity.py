@@ -34,7 +34,13 @@ class Enemy(arcade.Sprite):
             str(RESOURCES_DIR / SKELETON_IMAGES[skeleton_type]),
             SKELETON_SCALES[skeleton_type],
         )
-        self.path = path
+        # The waypoints mark the middle of the road, and that's where the
+        # feet should be, not the middle of the sprite. Find how far below
+        # the sprite's center the lowest visible pixel (the feet) sits, and
+        # raise the whole path by that much.
+        feet_bottom = self.texture.image.getbbox()[3]
+        feet_offset = (feet_bottom - self.texture.image.height / 2) * self.scale_y
+        self.path = [(x, y + feet_offset) for x, y in path]
         self.path_index = 0
         self.skeleton_type = skeleton_type
         self.level = level
@@ -80,6 +86,11 @@ class Enemy(arcade.Sprite):
                 self.center_x += (dx / distance) * current_speed
                 self.center_y += (dy / distance) * current_speed
 
+    @property
+    def reached_end(self):
+        """True once the enemy has walked past the last waypoint."""
+        return self.path_index >= len(self.path)
+
     def apply_damage(self, amount):
         self.health -= amount
         if self.health <= 0:
@@ -111,9 +122,10 @@ class Projectile:
     COLOR = arcade.color.GREEN
     LINE_WIDTH = 3
 
-    def __init__(self, start_x, start_y, target):
+    def __init__(self, start_x, start_y, target, damage):
         self.center_x, self.center_y = start_x, start_y
         self.target = target
+        self.damage = damage
         self.speed = BULLET_SPEED
         self.alive = True
         self.gold_reward = 0
@@ -130,9 +142,10 @@ class Projectile:
         distance = math.hypot(dx, dy)
 
         if distance < self.speed:
-            # hit target
-            self.gold_reward = self.target.gold_value
-            self.target.remove_from_sprite_lists() # or real damage
+            # hit target, only earn gold on the shot that kills it
+            self.target.apply_damage(self.damage)
+            if self.target.health <= 0:
+                self.gold_reward = self.target.gold_value
             self.alive = False
         else:
             self.center_x += (dx / distance) * self.speed
@@ -154,6 +167,7 @@ class Tower(arcade.Sprite):
         self.center_x, self.center_y = x, y
         self.range, self.cooldown_max, self.cooldown_timer = 200.0, 0.75, 0.0 # seconds between attacks
         self.targeting_mode = "FIRST" # Options: 'FIRST', 'CLOSEST'
+        self.damage = 20 # skeletons have 40-50 hp, so it takes 2-3 hits
 
     def update_target(self, enemies):
         """Finds the best target based on targeting mode"""
@@ -183,7 +197,7 @@ class Tower(arcade.Sprite):
     def shoot(self, target, projectile_list):
         """Spawns a new projectile if cooldown is ready"""
         if self.cooldown_timer <= 0:
-            bullet = Projectile(self.center_x, self.center_y + self.height / 2, target)
+            bullet = Projectile(self.center_x, self.center_y + self.height / 2, target, self.damage)
             projectile_list.append(bullet)
             self.cooldown_timer = self.cooldown_max
 
