@@ -8,10 +8,16 @@ levels = {
     1: {
         "map": "./resources/images/backgrounds/map.gif",
         "waypoints": [
-            (0, 400), # spawn point (left side)
-            (300, 400), # first turn (goes down)
-            (300, 150), # second turn (goes right)
-            (800, 150), # exit point (right side)
+            # arcade's y-axis starts at the bottom of the screen, so these are
+            # measured from the bottom-left corner of the map
+            (0, 340), # spawn point (left side)
+            (280, 340), # first turn (goes up)
+            (280, 515), # second turn (goes right, across the top bridge)
+            (1240, 515), # third turn (goes down)
+            (1240, 340), # fourth turn (goes left)
+            (1000, 340), # fifth turn (goes down)
+            (1000, 245), # sixth turn (goes right)
+            (1280, 245), # exit point (right side)
         ]
     },
 }
@@ -30,6 +36,8 @@ class TowerDefenseGame(arcade.Window):
 
         # game state variables
         self.gold = 100
+        self.lives = 20  # lose one each time an enemy makes it to the exit
+        self.game_over = False
         self.mouse_x, self.mouse_y = 0, 0
         self.selected_tower_type = "Basic"
         self.towers = []
@@ -77,7 +85,19 @@ class TowerDefenseGame(arcade.Window):
             Normally, you'll call update() on the sprite lists that
             need it.
             """
+            if self.game_over:
+                return
+
             self.enemy_list.update()
+
+            # enemies that make it to the exit cost us a life
+            for enemy in list(self.enemy_list):
+                if enemy.reached_end:
+                    enemy.remove_from_sprite_lists()
+                    self.lives -= 1
+            if self.lives <= 0:
+                self.lives = 0
+                self.game_over = True
 
             self.enemy_spawn_timer += delta_time
             if self.enemy_spawn_timer >= self.enemy_spawn_interval:
@@ -115,6 +135,7 @@ class TowerDefenseGame(arcade.Window):
             enemy.draw_health_bar()
 
         # Draw UI text
+        arcade.draw_text(f"Lives: {self.lives}", 10, 590, arcade.color.BLACK, 20)
         arcade.draw_text(f"Gold: {self.gold}", 10, 560, arcade.color.BLACK, 20)
         arcade.draw_text(
             f"Selected: {self.selected_tower_type}",
@@ -137,6 +158,18 @@ class TowerDefenseGame(arcade.Window):
 
         # Draw ghost tower on mouse hover
         arcade.draw_circle_filled(self.mouse_x, self.mouse_y, 20, (0, 0, 255, 100))
+
+        if self.game_over:
+            arcade.draw_text(
+                "GAME OVER",
+                SCREEN_WIDTH / 2,
+                SCREEN_HEIGHT / 2,
+                arcade.color.RED,
+                64,
+                anchor_x="center",
+                anchor_y="center",
+                bold=True,
+            )
 
     # --- Keyboard Events ---
     def on_key_press(self, symbol: int, modifiers: int):
