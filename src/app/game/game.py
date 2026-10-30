@@ -20,7 +20,15 @@ levels = {
             (1280, 245), # exit point (right side)
         ],
         "towerLocations": [
-            (240, 300),
+            # each spot is on open grass next to the path, in path order
+            (136, 396), # above the entry road
+            (295, 285), # grass just outside the bottom-left corner of the path
+            (336, 576), # above the top-left corner
+            (772, 616), # above the road, just before the top bridge
+            (824, 460), # below the road, just before the top bridge
+            (1028, 460), # below the road, just after the top bridge
+            (1150, 420), # inside the right-hand loop
+            (1176, 192), # below the exit road
         ]
     },
 }
@@ -43,7 +51,7 @@ class TowerDefenseGame(arcade.Window):
         self.game_over = False
         self.mouse_x, self.mouse_y = 0, 0
         self.selected_tower_type = "Basic"
-        self.towers = []
+        self.tower_cost = 50
         self.dragging = False
 
         # If you have sprite lists, you should create them here,
@@ -54,6 +62,9 @@ class TowerDefenseGame(arcade.Window):
 
         #self.enemy_path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
         self.enemy_path = levels.get(1).get("waypoints")
+        self.tower_locations = levels.get(1).get("towerLocations")
+        self.tower_spot_size = 0  # set in setup() to match the tower's width
+        self.occupied_spots = set()  # tower locations that already have a tower
         self.enemy_spawn_interval = 5.0  # seconds between enemy spawns
         self.enemy_spawn_timer = 0.0
         self.enemy_level = 1  # climbs with each spawn, so later enemies are worth more gold
@@ -70,9 +81,11 @@ class TowerDefenseGame(arcade.Window):
             texture = arcade.load_texture(file_path)
             self.background_textures.append(texture)
 
-        # Create a tower & enemy
-        tower = Tower(400, 300)
-        self.tower_list.append(tower)
+        # We start with no towers. Tower spots are squares as wide as a tower,
+        # marking where its base goes, so measure a sample tower for the size.
+        self.tower_spot_size = Tower(0, 0).width
+
+        # Create an enemy
 
         enemy = Enemy(self.enemy_path, level=self.enemy_level)
         self.enemy_list.append(enemy)
@@ -130,6 +143,14 @@ class TowerDefenseGame(arcade.Window):
                 rect = arcade.LBWH(i * SCREEN_WIDTH, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
             )
 
+        # Draw a gray box on every empty spot where a tower can be placed
+        for x, y in self.tower_locations:
+            if (x, y) in self.occupied_spots:
+                continue
+            spot = arcade.XYWH(x, y, self.tower_spot_size, self.tower_spot_size)
+            arcade.draw_rect_filled(spot, (128, 128, 128, 160))
+            arcade.draw_rect_outline(spot, arcade.color.DARK_GRAY, 2)
+
         self.tower_list.draw()
         self.enemy_list.draw()
         for projectile in self.projectile_list:
@@ -154,10 +175,6 @@ class TowerDefenseGame(arcade.Window):
             arcade.color.BLACK,
             12,
         )
-
-        # Draw placed towers
-        for x, y, color in self.towers:
-            arcade.draw_circle_filled(x, y, 20, color)
 
         # Draw ghost tower on mouse hover
         arcade.draw_circle_filled(self.mouse_x, self.mouse_y, 20, (0, 0, 255, 100))
@@ -210,19 +227,43 @@ class TowerDefenseGame(arcade.Window):
         Called when the user presses a mouse button.
         """
         if button == arcade.MOUSE_BUTTON_LEFT:
-            # Spend gold & place a tower
-            if self.gold >= 50:
-                color = (
-                    arcade.color.BLUE
-                    if self.selected_tower_type == "Basic Tower"
-                    else arcade.color.RED
-                )
-                self.towers.append((x, y, color))
-                self.gold -= 50
-                print(f"Placed {self.selected_tower_type} at ({x}, {y})")
+            # Spend gold & place a tower, but only on an empty tower spot
+            spot = self.find_tower_spot(x, y)
+            if spot is None:
+                return
+            if self.gold < self.tower_cost:
+                print("Not enough gold to place a tower.")
+                return
+            self.place_tower(spot)
+            self.gold -= self.tower_cost
+            print(f"Placed {self.selected_tower_type} at {spot}")
         elif button == arcade.MOUSE_BUTTON_RIGHT:
             self.dragging = True
             print("Started right-click drag mode.")
+
+    def find_tower_spot(self, x, y):
+        """Return the empty tower spot under (x, y), or None if there isn't one."""
+        half = self.tower_spot_size / 2
+        for spot_x, spot_y in self.tower_locations:
+            if (spot_x, spot_y) in self.occupied_spots:
+                continue
+            if abs(x - spot_x) <= half and abs(y - spot_y) <= half:
+                return (spot_x, spot_y)
+        return None
+
+    def place_tower(self, spot):
+        """Build a tower standing on the given spot."""
+        spot_x, spot_y = spot
+        tower = Tower(spot_x, spot_y)
+
+        # The tower image has empty space under it, so line up the bottom of
+        # the visible tower with the bottom of the gray square.
+        image = tower.texture.image
+        base_offset = (image.getbbox()[3] - image.height / 2) * tower.scale_y
+        tower.center_y = spot_y - self.tower_spot_size / 2 + base_offset
+
+        self.tower_list.append(tower)
+        self.occupied_spots.add(spot)
 
     def on_mouse_release(self, x: float, y: float, button: int, key_modifiers: int):
         """
