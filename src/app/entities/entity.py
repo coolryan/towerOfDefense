@@ -56,7 +56,7 @@ class Enemy(arcade.Sprite):
         # State
         self.is_slowed = False
         self.slow_timer = 0.0
-
+ 
         # Position at start of path
         if self.path:
             self.center_x, self.center_y = self.path[0]

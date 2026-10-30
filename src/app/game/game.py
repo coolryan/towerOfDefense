@@ -29,6 +29,17 @@ levels = {
             (1028, 460), # below the road, just after the top bridge
             (1150, 420), # inside the right-hand loop
             (1176, 192), # below the exit road
+        ],
+        "enemyWaves": [
+            {
+                "startTime": 1,
+                "phrases": [
+                    {
+                        "time": 0,
+                        "enemies": [Enemy(self.enemy_path, level=self.enemy_level)]
+                    }
+                ]
+            }
         ]
     },
 }
