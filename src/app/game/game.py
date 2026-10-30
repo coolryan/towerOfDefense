@@ -18,6 +18,9 @@ levels = {
             (1000, 340), # fifth turn (goes down)
             (1000, 245), # sixth turn (goes right)
             (1280, 245), # exit point (right side)
+        ],
+        "towerLocations": [
+            (240, 300),
         ]
     },
 }
