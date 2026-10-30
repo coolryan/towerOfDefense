@@ -4,7 +4,14 @@ from entities.enemyTypes import SkeletonType
 
 # constant
 BULLET_SPEED = 7.0
-BASE_GOLD_REWARD = 25
+# Balance: these two were tuned together by simulating the waves. Gold per kill
+# sets how fast you can afford towers (a 50 gold tower every few kills), and
+# LEVEL_GROWTH sets how much tougher each enemy level is, so higher-level waves
+# need more towers.
+BASE_GOLD_REWARD = 12
+# Every level above 1 adds this many times the enemy type's base hp (and gold
+# reward): level 1 = 1x, level 2 = 3x, level 3 = 5x, level 4 = 7x, ...
+LEVEL_GROWTH = 2.0
 
 RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
 
@@ -47,11 +54,13 @@ class Enemy(arcade.Sprite):
 
         # Stats
         stats = self.skeleton_type.value
-        self.max_health = float(stats.hp)
+        level_multiplier = 1 + LEVEL_GROWTH * (self.level - 1)
+        self.max_health = float(stats.hp) * level_multiplier
         self.health = self.max_health
         self.speed = float(stats.speed)
-        # Stronger enemy types and higher levels are worth more gold on kill.
-        self.gold_value = round(BASE_GOLD_REWARD * stats.gold_multiplier * self.level)
+        # Stronger enemy types and higher levels are worth more gold on kill,
+        # growing at the same rate as their hp so the reward matches the effort.
+        self.gold_value = round(BASE_GOLD_REWARD * stats.gold_multiplier * level_multiplier)
 
         # State
         self.is_slowed = False

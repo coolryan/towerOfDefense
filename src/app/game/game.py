@@ -36,7 +36,32 @@ levels = {
                 "phrases": [
                     {
                         "time": 0,
-                        "enemies": [Enemy(self.enemy_path, level=self.enemy_level)]
+                        "enemyLevels": [1]
+                    },
+                    {
+                        "time": 5,
+                        "enemyLevels": [1,1]
+                    },
+                    {
+                        "time": 10,
+                        "enemyLevels": [1,1,1]
+                    }
+                ]
+            },
+            {
+                "startTime": 15,
+                "phrases": [
+                    {
+                        "time": 0,
+                        "enemyLevels": [2]
+                    },
+                    {
+                        "time": 5,
+                        "enemyLevels": [2,1,1]
+                    },
+                    {
+                        "time": 10,
+                        "enemyLevels": [2,2,2]
                     }
                 ]
             }
@@ -76,9 +101,17 @@ class TowerDefenseGame(arcade.Window):
         self.tower_locations = levels.get(1).get("towerLocations")
         self.tower_spot_size = 0  # set in setup() to match the tower's width
         self.occupied_spots = set()  # tower locations that already have a tower
-        self.enemy_spawn_interval = 5.0  # seconds between enemy spawns
-        self.enemy_spawn_timer = 0.0
-        self.enemy_level = 1  # climbs with each spawn, so later enemies are worth more gold
+        # Enemy waves: build a list of (spawn time, enemy level) for every enemy
+        # in every wave, sorted so the next enemy to spawn is always first.
+        self.game_time = 0.0  # seconds since the game started
+        self.enemy_spacing = 0.75  # seconds between enemies in the same phrase, so they don't stack
+        self.spawn_schedule = []
+        for wave in levels.get(1).get("enemyWaves"):
+            for phrase in wave["phrases"]:
+                phrase_time = wave["startTime"] + phrase["time"]
+                for i, level in enumerate(phrase["enemyLevels"]):
+                    self.spawn_schedule.append((phrase_time + i * self.enemy_spacing, level))
+        self.spawn_schedule.sort()
 
     def setup(self):
         image_files = [
@@ -98,8 +131,8 @@ class TowerDefenseGame(arcade.Window):
 
         # Create an enemy
 
-        enemy = Enemy(self.enemy_path, level=self.enemy_level)
-        self.enemy_list.append(enemy)
+        # enemy = Enemy(self.enemy_path, level=self.enemy_level)
+        # self.enemy_list.append(enemy)
 
     def reset(self):
         """Reset the game to the initial state."""
@@ -115,7 +148,13 @@ class TowerDefenseGame(arcade.Window):
             if self.game_over:
                 return
 
+            ## Add enemies
             self.enemy_list.update()
+            self.game_time += delta_time
+            # spawn every enemy whose time has come
+            while self.spawn_schedule and self.spawn_schedule[0][0] <= self.game_time:
+                _, level = self.spawn_schedule.pop(0)
+                self.enemy_list.append(Enemy(self.enemy_path, level=level))
 
             # enemies that make it to the exit cost us a life
             for enemy in list(self.enemy_list):
@@ -126,11 +165,7 @@ class TowerDefenseGame(arcade.Window):
                 self.lives = 0
                 self.game_over = True
 
-            self.enemy_spawn_timer += delta_time
-            if self.enemy_spawn_timer >= self.enemy_spawn_interval:
-                self.enemy_spawn_timer -= self.enemy_spawn_interval
-                self.enemy_level += 1
-                self.enemy_list.append(Enemy(self.enemy_path, level=self.enemy_level))
+            
 
             for tower in self.tower_list:
                 tower.on_update(delta_time, self.enemy_list, self.projectile_list)
