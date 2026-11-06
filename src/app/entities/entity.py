@@ -15,6 +15,9 @@ LEVEL_GROWTH = 2.0
 
 RESOURCES_DIR = Path(__file__).resolve().parents[3] / "resources"
 
+LASER_SOUND_FILE = RESOURCES_DIR / "audio/tower_laser.ogg"
+LASER_VOLUME = 0.3  # kept low since several towers can fire at once
+
 SKELETON_IMAGES = {
     SkeletonType.WARRIOR: "images/warriors/skeleton_warriors/skeleton_warrior.png",
     SkeletonType.ARCHER: "images/warriors/skeleton_warriors/skeleton-archer.png",
@@ -171,8 +174,15 @@ class Projectile:
 
 class Tower(arcade.Sprite):
     """Tower with range, rotation, cooldowns & targeting logoc"""
+    # Shared by every tower so the file is only read once. It's loaded by the
+    # first tower rather than at import, because on macOS loading audio before
+    # the game window exists crashes pyglet.
+    laser_sound = None
+
     def __init__(self, x, y):
         super().__init__(str(RESOURCES_DIR / "images/tiles/towerDefense_tile250.png"), 0.18)
+        if Tower.laser_sound is None:
+            Tower.laser_sound = arcade.load_sound(str(LASER_SOUND_FILE))
         self.center_x, self.center_y = x, y
         self.range, self.cooldown_max, self.cooldown_timer = 200.0, 0.75, 0.0 # seconds between attacks
         self.targeting_mode = "FIRST" # Options: 'FIRST', 'CLOSEST'
@@ -208,6 +218,7 @@ class Tower(arcade.Sprite):
         if self.cooldown_timer <= 0:
             bullet = Projectile(self.center_x, self.center_y + self.height / 2, target, self.damage)
             projectile_list.append(bullet)
+            arcade.play_sound(self.laser_sound, volume=LASER_VOLUME)
             self.cooldown_timer = self.cooldown_max
 
     def on_update(self, delta_time, enemies, projectile_list):
