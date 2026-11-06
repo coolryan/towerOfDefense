@@ -1,7 +1,16 @@
 import arcade
 from entities.entity import *
+from entities.towerTypes import TowerType
 from configs.settings import *
 from ui.ui import *
+
+# Number keys 1-9 select tower types in the order they're listed in TowerType.
+# Keys past the last tower type do nothing until more types are added.
+TOWER_KEYS = [
+    arcade.key.KEY_1, arcade.key.KEY_2, arcade.key.KEY_3,
+    arcade.key.KEY_4, arcade.key.KEY_5, arcade.key.KEY_6,
+    arcade.key.KEY_7, arcade.key.KEY_8, arcade.key.KEY_9,
+]
 
 levels = {
     # List of (x, y) coordinates represenating the turns on the map path
@@ -86,8 +95,7 @@ class TowerDefenseGame(arcade.Window):
         self.lives = 20  # lose one each time an enemy makes it to the exit
         self.game_over = False
         self.mouse_x, self.mouse_y = 0, 0
-        self.selected_tower_type = "Basic"
-        self.tower_cost = 50
+        self.selected_tower_type = TowerType.BASIC
         self.dragging = False
 
         # If you have sprite lists, you should create them here,
@@ -207,23 +215,29 @@ class TowerDefenseGame(arcade.Window):
         # Draw UI text
         arcade.draw_text(f"Lives: {self.lives}", 10, 590, arcade.color.BLACK, 20)
         arcade.draw_text(f"Gold: {self.gold}", 10, 560, arcade.color.BLACK, 20)
+        selected = self.selected_tower_type.value
         arcade.draw_text(
-            f"Selected: {self.selected_tower_type}",
+            f"Selected: {selected.name} Tower (${selected.cost})",
             10,
             530,
             arcade.color.BLACK,
             14,
         )
+        tower_keys_text = ", ".join(
+            f"[{i}] {tower_type.value.name} ${tower_type.value.cost}"
+            for i, tower_type in enumerate(TowerType, start=1)
+        )
         arcade.draw_text(
-            "Keys: [1] Basic Tower, [2] Heavy Tower",
+            f"Keys: {tower_keys_text}",
             10,
             500,
             arcade.color.BLACK,
             12,
         )
 
-        # Draw ghost tower on mouse hover
+        # Draw ghost tower on mouse hover, with the selected tower's range around it
         arcade.draw_circle_filled(self.mouse_x, self.mouse_y, 20, (0, 0, 255, 100))
+        arcade.draw_circle_outline(self.mouse_x, self.mouse_y, selected.range, (0, 0, 255, 100), 2)
 
         if self.game_over:
             arcade.draw_text(
@@ -245,12 +259,12 @@ class TowerDefenseGame(arcade.Window):
         For a full list of keys, see:
         https://api.arcade.academy/en/latest/arcade.key.html
         """
-        if symbol == arcade.key.KEY_1:
-            self.selected_tower_type = "Basic Tower"
-            print("selected Basic Tower")
-        elif symbol == arcade.key.KEY_2:
-            self.selected_tower_type = "Heavy Tower"
-            print("selected Heavy Tower")
+        if symbol in TOWER_KEYS:
+            tower_types = list(TowerType)
+            index = TOWER_KEYS.index(symbol)
+            if index < len(tower_types):
+                self.selected_tower_type = tower_types[index]
+                print(f"selected {self.selected_tower_type.value.name} Tower")
         elif symbol == arcade.key.ESCAPE:
             self.close()
     
@@ -258,7 +272,7 @@ class TowerDefenseGame(arcade.Window):
         """
         Called whenever the user lets off a previously pressed key.
         """
-        if symbol == arcade.key.KEY_1 or symbol == arcade.key.KEY_2:
+        if symbol in TOWER_KEYS:
             print("Tower selection key released.")
 
     # --- Mouse Motion Events ---
@@ -277,12 +291,13 @@ class TowerDefenseGame(arcade.Window):
             spot = self.find_tower_spot(x, y)
             if spot is None:
                 return
-            if self.gold < self.tower_cost:
-                print("Not enough gold to place a tower.")
+            tower_cost = self.selected_tower_type.value.cost
+            if self.gold < tower_cost:
+                print(f"Not enough gold to place a {self.selected_tower_type.value.name} Tower.")
                 return
-            self.place_tower(spot)
-            self.gold -= self.tower_cost
-            print(f"Placed {self.selected_tower_type} at {spot}")
+            self.place_tower(spot, self.selected_tower_type)
+            self.gold -= tower_cost
+            print(f"Placed {self.selected_tower_type.value.name} Tower at {spot}")
         elif button == arcade.MOUSE_BUTTON_RIGHT:
             self.dragging = True
             print("Started right-click drag mode.")
@@ -297,10 +312,10 @@ class TowerDefenseGame(arcade.Window):
                 return (spot_x, spot_y)
         return None
 
-    def place_tower(self, spot):
-        """Build a tower standing on the given spot."""
+    def place_tower(self, spot, tower_type: TowerType = TowerType.BASIC):
+        """Build a tower of the given type standing on the given spot."""
         spot_x, spot_y = spot
-        tower = Tower(spot_x, spot_y)
+        tower = Tower(spot_x, spot_y, tower_type)
 
         # The tower image has empty space under it, so line up the bottom of
         # the visible tower with the bottom of the gray square.
