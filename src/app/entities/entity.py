@@ -1,6 +1,7 @@
 import arcade, math, random
 from pathlib import Path
 from entities.enemyTypes import SkeletonType
+from entities.towerTypes import TowerType
 
 # constant
 BULLET_SPEED = 7.0
@@ -109,7 +110,7 @@ class Enemy(arcade.Sprite):
             self.kill()
 
     def apply_slow(self, duration):
-        self.is_slowed = False
+        self.is_slowed = True
         self.slow_timer = duration
 
     def draw_health_bar(self):
@@ -131,13 +132,14 @@ class Projectile:
     always points exactly along its real direction of travel."""
 
     LENGTH = 20.0
-    COLOR = arcade.color.GREEN
     LINE_WIDTH = 3
 
-    def __init__(self, start_x, start_y, target, damage):
+    def __init__(self, start_x, start_y, target, damage, color=arcade.color.GREEN, slow_duration=0.0):
         self.center_x, self.center_y = start_x, start_y
         self.target = target
         self.damage = damage
+        self.color = color
+        self.slow_duration = slow_duration
         self.speed = BULLET_SPEED
         self.alive = True
         self.gold_reward = 0
@@ -156,6 +158,8 @@ class Projectile:
         if distance < self.speed:
             # hit target, only earn gold on the shot that kills it
             self.target.apply_damage(self.damage)
+            if self.slow_duration > 0:
+                self.target.apply_slow(self.slow_duration)
             if self.target.health <= 0:
                 self.gold_reward = self.target.gold_value
             self.alive = False
@@ -170,7 +174,7 @@ class Projectile:
 
         tail_x = self.center_x - (dx / distance) * self.LENGTH
         tail_y = self.center_y - (dy / distance) * self.LENGTH
-        arcade.draw_line(tail_x, tail_y, self.center_x, self.center_y, self.COLOR, self.LINE_WIDTH)
+        arcade.draw_line(tail_x, tail_y, self.center_x, self.center_y, self.color, self.LINE_WIDTH)
 
 class Tower(arcade.Sprite):
     """Tower with range, rotation, cooldowns & targeting logoc"""
@@ -179,14 +183,19 @@ class Tower(arcade.Sprite):
     # the game window exists crashes pyglet.
     laser_sound = None
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, tower_type: TowerType = TowerType.BASIC):
         super().__init__(str(RESOURCES_DIR / "images/tiles/towerDefense_tile250.png"), 0.18)
         if Tower.laser_sound is None:
             Tower.laser_sound = arcade.load_sound(str(LASER_SOUND_FILE))
         self.center_x, self.center_y = x, y
-        self.range, self.cooldown_max, self.cooldown_timer = 200.0, 0.75, 0.0 # seconds between attacks
+        self.tower_type = tower_type
+
+        # Stats
+        stats = self.tower_type.value
+        self.color = stats.color  # all types share one image, so tint it to tell them apart
+        self.range, self.cooldown_max, self.cooldown_timer = stats.range, stats.cooldown, 0.0 # seconds between attacks
         self.targeting_mode = "FIRST" # Options: 'FIRST', 'CLOSEST'
-        self.damage = 20 # skeletons have 40-50 hp, so it takes 2-3 hits
+        self.damage = stats.damage
 
     def update_target(self, enemies):
         """Finds the best target based on targeting mode"""
@@ -216,9 +225,13 @@ class Tower(arcade.Sprite):
     def shoot(self, target, projectile_list):
         """Spawns a new projectile if cooldown is ready"""
         if self.cooldown_timer <= 0:
-            bullet = Projectile(self.center_x, self.center_y + self.height / 2, target, self.damage)
+            stats = self.tower_type.value
+            bullet = Projectile(
+                self.center_x, self.center_y + self.height / 2, target, self.damage,
+                color=stats.color, slow_duration=stats.slow_duration,
+            )
             projectile_list.append(bullet)
-            arcade.play_sound(self.laser_sound, volume=LASER_VOLUME)
+            arcade.play_sound(self.laser_sound, volume=LASER_VOLUME, speed=stats.sound_speed)
             self.cooldown_timer = self.cooldown_max
 
     def on_update(self, delta_time, enemies, projectile_list):
