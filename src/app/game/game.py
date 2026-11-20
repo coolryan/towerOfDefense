@@ -108,15 +108,15 @@ levels = {
                 "phrases": [
                     {
                         "time": 0,
-                        "enemyLevels": [1]
+                        "enemyLevels": [1, 2]
                     },
                     {
                         "time": 5,
-                        "enemyLevels": [1,1]
+                        "enemyLevels": [1, 1, 10]
                     },
                     {
                         "time": 10,
-                        "enemyLevels": [1,1,1]
+                        "enemyLevels": [1,1, 50]
                     }
                 ]
             },
@@ -125,15 +125,15 @@ levels = {
                 "phrases": [
                     {
                         "time": 0,
-                        "enemyLevels": [2]
+                        "enemyLevels": [2, 3]
                     },
                     {
                         "time": 5,
-                        "enemyLevels": [2,1,1]
+                        "enemyLevels": [2,1,100]
                     },
                     {
                         "time": 10,
-                        "enemyLevels": [2,2,2]
+                        "enemyLevels": [2,2,20]
                     }
                 ]
             }
@@ -160,6 +160,7 @@ class TowerDefenseGame(arcade.Window):
         self.mouse_x, self.mouse_y = 0, 0
         self.selected_tower_type = TowerType.BASIC
         self.dragging = False
+        self.current_level = 1
 
         # If you have sprite lists, you should create them here,
         # and set them to None
@@ -168,26 +169,29 @@ class TowerDefenseGame(arcade.Window):
         self.projectile_list = []
 
         #self.enemy_path = [(0, 360), (1280, 360)]  # walk straight across the middle of the screen
-        self.enemy_path = levels.get(1).get("waypoints")
-        self.tower_locations = levels.get(1).get("towerLocations")
+        self.enemy_path = levels.get(self.current_level).get("waypoints")
+        self.tower_locations = levels.get(self.current_level).get("towerLocations")
         self.tower_spot_size = 0  # set in setup() to match the tower's width
         self.occupied_spots = set()  # tower locations that already have a tower
+        
         # Enemy waves: build a list of (spawn time, enemy level) for every enemy
         # in every wave, sorted so the next enemy to spawn is always first.
         self.game_time = 0.0  # seconds since the game started
         self.enemy_spacing = 0.75  # seconds between enemies in the same phrase, so they don't stack
         self.spawn_schedule = []
-        for wave in levels.get(1).get("enemyWaves"):
+        
+        for wave in levels.get(self.current_level).get("enemyWaves"):
             for phrase in wave["phrases"]:
                 phrase_time = wave["startTime"] + phrase["time"]
+                
                 for i, level in enumerate(phrase["enemyLevels"]):
                     self.spawn_schedule.append((phrase_time + i * self.enemy_spacing, level))
+        
         self.spawn_schedule.sort()
 
     def setup(self):
         image_files = [
-            levels.get(1).get("map"),
-            levels.get(2).get("map"),
+            levels.get(self.current_level).get("map"),
             # "./resources/images/backgrounds/Background_medieval_4.webp",
             # "./resources/images/backgrounds/empty-silhouette-medieval-background.jpg",
             # "./resources/images/backgrounds/MedievalKingdom.jpg"
@@ -211,12 +215,37 @@ class TowerDefenseGame(arcade.Window):
         # Do changes needed to restart the game here if you want to support that
         pass
 
+    def level_ended(self):
+        is_ended = not (self.spawn_schedule and self.spawn_schedule[0][0] <= self.game_time)
+        print(f"is level end? {is_ended}")
+    
+    def advance_level(self):
+        if self.current_level >= levels:
+            self.game_over = True
+            return
+        
+        self.current_level += 1
+
+        print(f"Now on level {self.current_level}")
+
+        for wave in levels.get(self.current_level).get("enemyWaves"):
+            for phrase in wave["phrases"]:
+                phrase_time = wave["startTime"] + phrase["time"]
+                
+                for i, level in enumerate(phrase["enemyLevels"]):
+                    self.spawn_schedule.append((phrase_time + i * self.enemy_spacing, level))
+        
+        self.spawn_schedule.sort()
+
     def on_update(self, delta_time):
             """
             All the logic to move, and the game logic goes here.
             Normally, you'll call update() on the sprite lists that
             need it.
             """
+            if self.level_ended():
+                self.advance_level()
+
             if self.game_over:
                 return
 
@@ -233,11 +262,10 @@ class TowerDefenseGame(arcade.Window):
                 if enemy.reached_end:
                     enemy.remove_from_sprite_lists()
                     self.lives -= 1
+            
             if self.lives <= 0:
                 self.lives = 0
                 self.game_over = True
-
-            
 
             for tower in self.tower_list:
                 tower.on_update(delta_time, self.enemy_list, self.projectile_list)
@@ -265,14 +293,17 @@ class TowerDefenseGame(arcade.Window):
         for x, y in self.tower_locations:
             if (x, y) in self.occupied_spots:
                 continue
+
             spot = arcade.XYWH(x, y, self.tower_spot_size, self.tower_spot_size)
             arcade.draw_rect_filled(spot, (128, 128, 128, 160))
             arcade.draw_rect_outline(spot, arcade.color.DARK_GRAY, 2)
 
         self.tower_list.draw()
         self.enemy_list.draw()
+        
         for projectile in self.projectile_list:
             projectile.draw()
+        
         for enemy in self.enemy_list:
             enemy.draw_health_bar()
 
@@ -355,10 +386,12 @@ class TowerDefenseGame(arcade.Window):
             spot = self.find_tower_spot(x, y)
             if spot is None:
                 return
+            
             tower_cost = self.selected_tower_type.value.cost
             if self.gold < tower_cost:
                 print(f"Not enough gold to place a {self.selected_tower_type.value.name} Tower.")
                 return
+            
             self.place_tower(spot, self.selected_tower_type)
             self.gold -= tower_cost
             print(f"Placed {self.selected_tower_type.value.name} Tower at {spot}")
@@ -372,6 +405,7 @@ class TowerDefenseGame(arcade.Window):
         for spot_x, spot_y in self.tower_locations:
             if (spot_x, spot_y) in self.occupied_spots:
                 continue
+            
             if abs(x - spot_x) <= half and abs(y - spot_y) <= half:
                 return (spot_x, spot_y)
         return None
