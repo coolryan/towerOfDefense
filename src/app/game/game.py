@@ -76,6 +76,69 @@ levels = {
             }
         ]
     },
+
+    2: {
+        "map": "./resources/images/backgrounds/map.gif",
+        "waypoints": [
+            # arcade's y-axis starts at the bottom of the screen, so these are
+            # measured from the bottom-left corner of the map
+            (0, 340), # spawn point (left side)
+            (280, 340), # first turn (goes up)
+            (280, 515), # second turn (goes right, across the top bridge)
+            (1240, 515), # third turn (goes down)
+            (1240, 340), # fourth turn (goes left)
+            (1000, 340), # fifth turn (goes down)
+            (1000, 245), # sixth turn (goes right)
+            (1280, 245), # exit point (right side)
+        ],
+        "towerLocations": [
+            # each spot is on open grass next to the path, in path order
+            (136, 396), # above the entry road
+            (295, 285), # grass just outside the bottom-left corner of the path
+            (336, 576), # above the top-left corner
+            (772, 616), # above the road, just before the top bridge
+            (824, 460), # below the road, just before the top bridge
+            (1028, 460), # below the road, just after the top bridge
+            (1150, 420), # inside the right-hand loop
+            (1176, 192), # below the exit road
+        ],
+        "enemyWaves": [
+            {
+                "startTime": 1,
+                "phrases": [
+                    {
+                        "time": 0,
+                        "enemyLevels": [1]
+                    },
+                    {
+                        "time": 5,
+                        "enemyLevels": [1,1]
+                    },
+                    {
+                        "time": 10,
+                        "enemyLevels": [1,1,1]
+                    }
+                ]
+            },
+            {
+                "startTime": 15,
+                "phrases": [
+                    {
+                        "time": 0,
+                        "enemyLevels": [2]
+                    },
+                    {
+                        "time": 5,
+                        "enemyLevels": [2,1,1]
+                    },
+                    {
+                        "time": 10,
+                        "enemyLevels": [2,2,2]
+                    }
+                ]
+            }
+        ]
+    },
 }
 
 class TowerDefenseGame(arcade.Window):
@@ -124,6 +187,7 @@ class TowerDefenseGame(arcade.Window):
     def setup(self):
         image_files = [
             levels.get(1).get("map"),
+            levels.get(2).get("map"),
             # "./resources/images/backgrounds/Background_medieval_4.webp",
             # "./resources/images/backgrounds/empty-silhouette-medieval-background.jpg",
             # "./resources/images/backgrounds/MedievalKingdom.jpg"
